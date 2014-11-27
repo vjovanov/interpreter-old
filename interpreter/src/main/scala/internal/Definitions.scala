@@ -33,6 +33,7 @@ trait Definitions {
   lazy val INT_LESS_INT = method1(Int, "<", Int)
   lazy val INT_GT_INT = method1(Int, ">", Int)
   lazy val INT_EQEQ_INT = method1(Int, "==", Int)
+  lazy val LONG_EQEQ_LONG = method1(Long, "==", Long)
 
   lazy val Throwable_init = method0(typeOf[Throwable], "<init>")
 }

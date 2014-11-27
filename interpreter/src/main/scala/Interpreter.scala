@@ -20,19 +20,33 @@ trait InterpreterProvides {
   def eval(tree: u.Tree): Any
 }
 
+final class TreeValue(value: Any)
+
 object interpret {
+
   def apply(c: Context)(tree: c.Tree): Any = {
+    withDefs(c)(Nil)(tree)
+  }
+
+  /*
+   * This version allows one to pass trees of definitions together with the program.
+   */
+  def withDefs(c: Context)(defs: Seq[c.Tree])(tree: c.Tree): Any = {
     import c.universe._
+    object SourceExtractor {
+      def unapply(tree: Tree): Option[(Symbol, MemberDef)] = tree match {
+        case src: MemberDef  => Some((src.symbol, src))
+        case src: ModuleDef  => Some((src.symbol, src))
+        case _ => None
+      }
+    }
     val engine = new {
       val u: c.universe.type = c.universe
     } with Engine with Emulators with InterpreterRequires with InterpreterProvides{
       def source(sym: Symbol): MemberDef = {
-        // TODO: general case of obtaining TSTs for symbols isn't implemented yet
-        // therefore for now we only support whatever we can find directly in the interpretee
-        // later on this function will be provided by interpretation hosts
-        // so here, in this project, we should not worry about it
-        val result = tree.collect{ case src: MemberDef if src.symbol == sym => src }.headOption
-        result.getOrElse(UnobtainableSource(sym))
+        (defs :+ tree).flatMap(_.collect{
+          case SourceExtractor(`sym`, src) => src
+        }).headOption.getOrElse(UnobtainableSource(sym))
       }
     }
     engine.eval(tree)

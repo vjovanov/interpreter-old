@@ -40,6 +40,7 @@ trait Emulators {
           case INT_LESS_INT     => binOp[Int, Int](_ < _)
           case INT_GT_INT       => binOp[Int, Int](_ > _)
           case INT_EQEQ_INT     => binOp[Int, Int](_ == _)
+          case LONG_EQEQ_LONG   => binOp[Long, Long](_ == _)
           case INT_PLUS_FLOAT   => binOp[Int, Float](_ + _)
           case Any_equals       => binOp[Any, Any](_.equals(_))
           case Any_hashCode     => unaryOp[Any](_.hashCode())
@@ -62,7 +63,7 @@ trait Emulators {
       }
     }
     override def select(member: Symbol, env: Env, static: Boolean): (Value, Env) = {
-      if (member.name.decodedName.toString == "apply") 
+      if (member.name.decodedName.toString == "apply")
         ec((args, env) => {(new EmulatedSome(mod.typeSignature, args.head, env), env)}, nullary = false , env)
       else (selectCallable(this, member, env), env)
     }

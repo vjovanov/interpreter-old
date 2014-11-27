@@ -38,6 +38,11 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
     case q"$_.this"                           => env.lookup(tree.symbol)
     case q"$expr.isInstanceOf[$tpt]"          => evalTypeTest(expr, tpt.tpe, env)
     case q"$expr.asInstanceOf[$tpt]"          => evalTypeCast(expr, tpt.tpe, env)
+    // case Apply(m: MemberDef, args) if false /*has no source*/ =>
+      // eval args
+      // find the object in the env
+      // reflectively call a method on an object
+      // 
     case Apply(expr, args)                    => evalApply(expr, args, env) // the q"$expr[..$targs](...$argss)" quasiquote is too high-level for this
     case TypeApply(expr, targs)               => eval(expr, env)
     case q"$lhs = $rhs"                       => evalAssign(lhs, rhs, env)
@@ -56,7 +61,7 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
     // case q"for (..$enums) $expr"           => never going to happen, because parser desugars these trees into applications
     // case q"for (..$enums) yield $expr"     => never going to happen, because parser desugars these trees into applications
     // case q"new { ..$early } with ..$parents { $self => ..$stats }" => never going to happen in general case, desugared into selects/applications of New
-    case _: ValDef | _: DefDef | _: ModuleDef => evalLocalDef(tree, env) // can't skip these trees, because we need to enter them in scope when interpreting
+    case _: ValDef | _: DefDef | _: ModuleDef => evalLocalDef(tree, env) // can't skip these trees, because we need to enter them in scope when interpreting    
     case _: MemberDef                         => eval(q"()", env) // skip these trees, because we have sym.source
     case _: Import                            => eval(q"()", env) // skip these trees, because it's irrelevant after typer, which has resolved all imports
     case _                                    => UnrecognizedAst(tree)
@@ -191,6 +196,8 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
     val (vexpr, env1) = eval(expr, env)
     val (vargs, env2) = eval(args, env1)
     try {
+      // reflective calls
+
       vexpr.apply(vargs, env2)
     } catch { case e@ReturnException(ret) => if (vexpr.isInstanceOf[MethodValue]) ret else throw e }
   }
