@@ -42,7 +42,7 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
       // eval args
       // find the object in the env
       // reflectively call a method on an object
-      // 
+      //
     case Apply(expr, args)                    => evalApply(expr, args, env) // the q"$expr[..$targs](...$argss)" quasiquote is too high-level for this
     case TypeApply(expr, targs)               => eval(expr, env)
     case q"$lhs = $rhs"                       => evalAssign(lhs, rhs, env)
@@ -61,7 +61,7 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
     // case q"for (..$enums) $expr"           => never going to happen, because parser desugars these trees into applications
     // case q"for (..$enums) yield $expr"     => never going to happen, because parser desugars these trees into applications
     // case q"new { ..$early } with ..$parents { $self => ..$stats }" => never going to happen in general case, desugared into selects/applications of New
-    case _: ValDef | _: DefDef | _: ModuleDef => evalLocalDef(tree, env) // can't skip these trees, because we need to enter them in scope when interpreting    
+    case _: ValDef | _: DefDef | _: ModuleDef => evalLocalDef(tree, env) // can't skip these trees, because we need to enter them in scope when interpreting
     case _: MemberDef                         => eval(q"()", env) // skip these trees, because we have sym.source
     case _: Import                            => eval(q"()", env) // skip these trees, because it's irrelevant after typer, which has resolved all imports
     case _                                    => UnrecognizedAst(tree)
@@ -362,14 +362,18 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
           (res, env2.extend(m, res))
         case _                                   =>
           try {
+            println(sym.asInstanceOf[scala.reflect.internal.Symbols#Symbol].id)
             stack.head.get(sym) match {
               case Some(f: CallableValue) if f.isNullary  => f.apply(Nil, this)
               case Some(other)                            => (other, this)
-              case None                                   => IllegalState(sym)
+              case None                                   =>
+                println(stack.head.map(x => (x._1.asInstanceOf[scala.reflect.internal.Symbols#Symbol].id, x._2)))
+                IllegalState(sym)
             }
           } catch { case ReturnException(res) => res }
       }
     }
+
     def extend(sym: Symbol, value: Value): Env = {
       stack.head.get(sym) match {
         case Some(v: Value) if sym == NoSymbol => Env((stack.head + (sym -> value)) :: stack.tail, heap) // "_" reassigning workaround
@@ -486,6 +490,7 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
       paramss match {
         case x :: Nil => // single parameter list - invoke
           val env2 = x.zip(args).foldLeft(env1)((tmpEnv, p) => tmpEnv.extend(p._1, p._2))
+          println(env2)
           val (res, env3) = eval(body, env2)
           (res, callSiteEnv.extendHeap(env3))
         case x :: xs => // multi parameter list - return curried function with N-1 parameter list
@@ -505,8 +510,16 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
   }
 
   case class MethodValue(sym: MethodSymbol, capturedEnv: Env) extends CallableValue {
+    // TODO VJ Why is here only one list of arguments
     override def apply(args: List[Value], callSiteEnv: Env): Result = {
       val src = source(sym).asInstanceOf[DefDef].rhs
+      println(s"Interpreting $sym")
+      println(showRaw(sym.paramLists.head.map(x => x.asInstanceOf[scala.reflect.internal.Symbols#Symbol].id)))
+      println(showRaw(source(sym), printIds = true))
+      val newEnv = (args zip sym.paramLists.head).foldLeft(capturedEnv.extend(sym, this)){(env, arg) =>
+        env.extend(arg._2, arg._1)
+      }
+
       FunctionValue(sym.paramLists, src, capturedEnv.extend(sym, this)).apply(args, callSiteEnv)
     }
     override def isNullary: Boolean = sym.paramLists.isEmpty
@@ -544,6 +557,7 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
         val traitSrc: MemberDef = source(target)
         val (stats:List[Tree], earlydefns) = traitSrc match {
           case q"$_ trait $name extends { ..$earlydefns } with ..$parents  { $_ => ..$stats }" => (stats, earlydefns)
+          case q"$_ trait $name[..$targs] { $_ => ..$stats }" => (stats, Nil)
         }
         val env1 = eval(earlydefns, env)._2
         val env2 = eval(stats, env1)._2
@@ -610,7 +624,7 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
     }
     override def toString = s"ObjectValue#" + id
   }
-  
+
   class UninitializedModuleValue(mod: ModuleSymbol) extends ModuleValue(mod) {
     override def select(member: Symbol, env: Env, static: Boolean = false): (Value, Env) = {
       val (res, env1) = init(env)
