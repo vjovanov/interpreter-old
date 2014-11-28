@@ -362,13 +362,10 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
           (res, env2.extend(m, res))
         case _                                   =>
           try {
-            println(sym.asInstanceOf[scala.reflect.internal.Symbols#Symbol].id)
             stack.head.get(sym) match {
               case Some(f: CallableValue) if f.isNullary  => f.apply(Nil, this)
               case Some(other)                            => (other, this)
-              case None                                   =>
-                println(stack.head.map(x => (x._1.asInstanceOf[scala.reflect.internal.Symbols#Symbol].id, x._2)))
-                IllegalState(sym)
+              case None                                   => IllegalState(sym)
             }
           } catch { case ReturnException(res) => res }
       }
@@ -490,7 +487,6 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
       paramss match {
         case x :: Nil => // single parameter list - invoke
           val env2 = x.zip(args).foldLeft(env1)((tmpEnv, p) => tmpEnv.extend(p._1, p._2))
-          println(env2)
           val (res, env3) = eval(body, env2)
           (res, callSiteEnv.extendHeap(env3))
         case x :: xs => // multi parameter list - return curried function with N-1 parameter list
@@ -512,15 +508,12 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
   case class MethodValue(sym: MethodSymbol, capturedEnv: Env) extends CallableValue {
     // TODO VJ Why is here only one list of arguments
     override def apply(args: List[Value], callSiteEnv: Env): Result = {
-      val src = source(sym).asInstanceOf[DefDef].rhs
-      println(s"Interpreting $sym")
-      println(showRaw(sym.paramLists.head.map(x => x.asInstanceOf[scala.reflect.internal.Symbols#Symbol].id)))
-      println(showRaw(source(sym), printIds = true))
-      val newEnv = (args zip sym.paramLists.head).foldLeft(capturedEnv.extend(sym, this)){(env, arg) =>
-        env.extend(arg._2, arg._1)
-      }
-
-      FunctionValue(sym.paramLists, src, capturedEnv.extend(sym, this)).apply(args, callSiteEnv)
+      // Attention: we need to be careful with the symbols of params. In methods
+      // with type parameters the arguments that reference them are being cloned
+      // in the namer (`thisMethodType`). The only way to get them is through pattern
+      // matching on the method body.
+      val q"def ${ _ }[..${ _ }](...$paramss): ${ _ } = $src" = source(sym).asInstanceOf[DefDef]
+      FunctionValue(paramss.map(_.map(_.symbol)), src, capturedEnv.extend(sym, this)).apply(args, callSiteEnv)
     }
     override def isNullary: Boolean = sym.paramLists.isEmpty
     override def toString = s"MethodValue#" + id
