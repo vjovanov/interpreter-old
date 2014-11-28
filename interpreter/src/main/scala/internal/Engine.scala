@@ -512,7 +512,7 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
       // with type parameters the arguments that reference them are being cloned
       // in the namer (`thisMethodType`). The only way to get them is through pattern
       // matching on the method body.
-      val q"def ${ _ }[..${ _ }](...$paramss): ${ _ } = $src" = source(sym).asInstanceOf[DefDef]
+      val q"${_} def ${ _ }[..${ _ }](...$paramss): ${ _ } = $src" = source(sym).asInstanceOf[DefDef]
       FunctionValue(paramss.map(_.map(_.symbol)), src, capturedEnv.extend(sym, this)).apply(args, callSiteEnv)
     }
     override def isNullary: Boolean = sym.paramLists.isEmpty
@@ -592,8 +592,13 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
         val bases = symbols.collect({case m: MethodSymbol => m}).filter(m => !m.isAbstractOverride && !m.isAbstract)
         bases.head
       }
-      else
-        sym.typeSignature.member(member.name).alternatives.find(alt => alt.typeSignature == member.typeSignature).get
+      else {
+        val internal = u.asInstanceOf[scala.reflect.internal.Types]
+
+        sym.typeSignature.member(member.name).alternatives.find{alt =>
+          alt.typeSignature.asInstanceOf[internal.Type].matches(member.typeSignature.asInstanceOf[internal.Type])
+        }.get
+      }
       env.heap.get(this) match {
         case Some(Object(fields)) => (fields.getOrElse(mem, MethodValue(mem.asMethod, env)), env)
         case Some(_: Primitive)   => IllegalState(this, "a primitive couldn't have fields")
