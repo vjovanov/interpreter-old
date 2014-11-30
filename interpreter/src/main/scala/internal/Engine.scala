@@ -506,7 +506,7 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
   }
 
   case class MethodValue(sym: MethodSymbol, capturedEnv: Env) extends CallableValue {
-    // TODO VJ Why is here only one list of arguments
+
     override def apply(args: List[Value], callSiteEnv: Env): Result = {
       // Attention: we need to be careful with the symbols of params. In methods
       // with type parameters the arguments that reference them are being cloned
