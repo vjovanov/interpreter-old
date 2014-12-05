@@ -20,12 +20,12 @@ trait Definitions {
     val (t1, t2) = (typeOf[T1].companion, typeOf[T2].companion)
     val overloaded = t1.member(TermName(name).encodedName).alternatives
     val candidate = overloaded.find(_.info.paramLists.head.head.info == t2)
-    candidate.getOrElse(throw new Exception("$t1.$name($t2) not found"))
+    candidate.getOrElse(throw new Exception(s"$t1.$name($t2) not found"))
   }
 
   private def method0(x1: Type, name: String): Symbol = {
     val candidate = x1.member(TermName(name)).alternatives.find(_.typeSignature.paramLists.head.isEmpty)
-    candidate.getOrElse(throw new Exception("$t1.$name() not found"))
+    candidate.getOrElse(throw new Exception(s"$x1.$name() not found"))
   }
   lazy val INT_PLUS_FLOAT = method1(Int, "+", Float)
   lazy val INT_PLUS_INT = method1(Int, "+", Int)
@@ -34,6 +34,7 @@ trait Definitions {
   lazy val INT_GT_INT = method1(Int, ">", Int)
   lazy val INT_EQEQ_INT = method1(Int, "==", Int)
   lazy val LONG_EQEQ_LONG = method1(Long, "==", Long)
+  lazy val ANYREF_EQ_ANYREF = typeOf[AnyRef].members.find(x => x.name.toString == "eq").get
 
   lazy val Throwable_init = method0(typeOf[Throwable], "<init>")
 }

@@ -45,6 +45,7 @@ trait Emulators {
           case Any_equals       => binOp[Any, Any](_.equals(_))
           case Any_hashCode     => unaryOp[Any](_.hashCode())
           case Object_hashcode  => unaryOp[java.lang.Object](_.hashCode())
+          case ANYREF_EQ_ANYREF => binOp[AnyRef, AnyRef](_ eq _)
           case Object_init      => dummyOp
           case Throwable_init   => dummyOp
           case other            => UnsupportedEmulation(sym)

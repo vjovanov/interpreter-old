@@ -20,7 +20,7 @@ trait InterpreterProvides {
   def eval(tree: u.Tree): Any
 }
 
-final class TreeValue(value: Any)
+final case class TreeValue(value: Any, env: Option[Any], primitive: Boolean)
 
 object interpret {
 
@@ -31,8 +31,9 @@ object interpret {
   /*
    * This version allows one to pass trees of definitions together with the program.
    */
-  def withDefs(c: Context)(defs: Seq[c.Tree])(tree: c.Tree): Any = {
+  def withDefs(c: Context)(defs: Seq[c.Tree])(tree: c.Tree):(Engine, Any) = {
     import c.universe._
+    import internal._
     object SourceExtractor {
       def unapply(tree: Tree): Option[(Symbol, MemberDef)] = tree match {
         case src: MemberDef  => Some((src.symbol, src))
@@ -49,6 +50,8 @@ object interpret {
         }).headOption.getOrElse(UnobtainableSource(sym))
       }
     }
-    engine.eval(tree)
+
+
+    (engine, engine.verifiedEval(tree))
   }
 }

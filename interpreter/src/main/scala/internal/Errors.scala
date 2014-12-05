@@ -9,7 +9,7 @@ trait Errors {
   // however for now let's not worry much about this, because that's a lot of work constantly rehashing the hierarchy
   // and let's just use sys.error to facilitate rapid experimentation
 
-  def UnobtainableSource(sym: Symbol) = sys.error(s"can't obtain source for $sym")
+  def UnobtainableSource(sym: Symbol) = sys.error(s"can't obtain source for $sym of ${sym.owner}")
 
   def UnattributedAst(culprit: Tree) = sys.error(s"can't interpret unattributed tree $culprit")
 

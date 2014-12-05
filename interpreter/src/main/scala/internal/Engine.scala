@@ -5,12 +5,24 @@ import scala.annotation.tailrec
 import scala.collection.immutable.ListMap
 import scala.runtime.AbstractFunction1
 
+object UniqueId {
+  @volatile var _nextId = new java.util.concurrent.atomic.AtomicInteger()
+}
+
 abstract class Engine extends InterpreterRequires with Definitions with Errors with Emulators {
   import u._
   import definitions._
   import internal.decorators._
 
+  private def initialEnv: Env = Env(List(ListMap()), ListMap())
+
   def eval(tree: Tree): Any = {
+    val (value, finalEnv) = verifiedEval(tree)
+    val (result, _) = value.reify(finalEnv)
+    result
+  }
+
+  def verifiedEval(tree: Tree, env: Env = initialEnv): Result = {
     // can only interpret fully attributes trees
     // which is why we can't test the interpreter on the output of reify
     // TODO: in Palladium this will become irrelevant, because all trees
@@ -21,13 +33,23 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
       case sub if sub.symbol == NoSymbol => UnattributedAst(sub)
       case _                             =>
     }
-    val initialEnv = Env(List(ListMap()), ListMap())
-    val (value, finalEnv) = eval(tree, initialEnv)
-    val (result, _) = value.reify(finalEnv)
-    result
+    eval(tree, env)
   }
 
   def eval(tree: Tree, env: Env): Result = tree match {
+    case t if t.attachments.contains[TreeValue]=>
+      t.attachments.get[TreeValue].get match {
+        case TreeValue(v, Some(oldEnv), true) =>
+          Value.reflect(v, env.extendHeap(oldEnv.asInstanceOf[Env]))
+        case TreeValue(v, Some(oldEnv), false) =>
+         (v.asInstanceOf[Value], env.extendHeap(oldEnv.asInstanceOf[Env]))
+        case TreeValue(v, None, true) =>
+          Value.reflect(v, env)
+        case TreeValue(v, None, false) => // this is when we pass trees
+          val value = new JvmValue(tree.tpe)
+          (value, env.extend(value, v))
+      }
+
     case q"${value: Value}"                   => (value, env)
     case EmptyTree                            => eval(q"()", env) // when used in blocks, means "skip that tree", so we evaluate to whatever
     case Literal(_)                           => evalLiteral(tree, env)
@@ -65,6 +87,14 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
     case _: MemberDef                         => eval(q"()", env) // skip these trees, because we have sym.source
     case _: Import                            => eval(q"()", env) // skip these trees, because it's irrelevant after typer, which has resolved all imports
     case _                                    => UnrecognizedAst(tree)
+  }
+
+  def debug(s: String, result: Result): Result = {
+    val (res, env) = result
+    println(s)
+    println(s"Result: $res: ${res.getClass}")
+    println(s"env: $env")
+    result
   }
 
   def eval(args: List[Tree], env: Env): Results = {
@@ -406,8 +436,7 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
     }
   }
 
-  @volatile private var _nextId = new java.util.concurrent.atomic.AtomicInteger()
-  private def nextId() = _nextId.incrementAndGet()
+  private def nextId() = UniqueId._nextId.incrementAndGet()
 
   sealed trait Value extends MagicMethodEmulator {
     val id = nextId()
@@ -419,6 +448,7 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
       env.heap.get(this) match {
         case Some(Primitive(prim)) => (prim, env)
         case Some(Object(fields))  => (fields, env)
+        case Some(x) => (x, env)
         case None                  => IllegalState(this)
       }
     }
