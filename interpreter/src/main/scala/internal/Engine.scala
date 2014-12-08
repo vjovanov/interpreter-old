@@ -37,7 +37,10 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
   }
 
   def eval(tree: Tree, env: Env): Result = tree match {
-    case t if t.attachments.contains[TreeValue]=>
+    case q"(..$params) => $body" if tree.attachments.contains[TreeValue] =>
+      val callback = tree.attachments.get[TreeValue].get.value
+      (CallbackFunctionValue(callback.asInstanceOf[List[Tree] => Tree]), env)
+    case t if t.attachments.contains[TreeValue] =>
       t.attachments.get[TreeValue].get match {
         case TreeValue(v, Some(oldEnv), true) =>
           Value.reflect(v, env.extendHeap(oldEnv.asInstanceOf[Env]))
@@ -533,6 +536,21 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
       if (member.name.toString == "apply") (this, env) else ???
     }
     override def toString = s"FunctionValue#" + id
+  }
+
+  case class CallbackFunctionValue(callback: List[Tree]=> Tree) extends CallableValue {
+    override def isNullary: Boolean = false
+    override def apply(args: List[Value], callSiteEnv: Env): Result = {
+      val resTree = callback(args.map(_.reify(callSiteEnv)._1).asInstanceOf[ List[Tree]])
+      val value = new JvmValue(resTree.tpe)
+      (value, callSiteEnv.extend(value, resTree))
+    }
+
+    override def select(member: Symbol, env: Env, static: Boolean = false): Result = {
+      // for now we assume user cannot select methods other than apply from a function
+      if (member.name.toString == "apply") (this, env) else ???
+    }
+    override def toString = s"CallbackFunctionValue#" + id
   }
 
   case class MethodValue(sym: MethodSymbol, capturedEnv: Env) extends CallableValue {
