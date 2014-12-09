@@ -35,20 +35,21 @@ trait Emulators {
         }
         def dummyOp = Value.reflect((), env)
         sym match {
-          case INT_PLUS_INT     => binOp[Int, Int](_ + _)
-          case INT_MINUS_INT    => binOp[Int, Int](_ - _)
-          case INT_LESS_INT     => binOp[Int, Int](_ < _)
-          case INT_GT_INT       => binOp[Int, Int](_ > _)
-          case INT_EQEQ_INT     => binOp[Int, Int](_ == _)
-          case LONG_EQEQ_LONG   => binOp[Long, Long](_ == _)
-          case INT_PLUS_FLOAT   => binOp[Int, Float](_ + _)
-          case Any_equals       => binOp[Any, Any](_.equals(_))
-          case Any_hashCode     => unaryOp[Any](_.hashCode())
-          case Object_hashcode  => unaryOp[java.lang.Object](_.hashCode())
-          case ANYREF_EQ_ANYREF => binOp[AnyRef, AnyRef](_ eq _)
-          case Object_init      => dummyOp
-          case Throwable_init   => dummyOp
-          case other            => UnsupportedEmulation(sym)
+          case INT_PLUS_INT       => binOp[Int, Int](_ + _)
+          case INT_MINUS_INT      => binOp[Int, Int](_ - _)
+          case INT_LESS_INT       => binOp[Int, Int](_ < _)
+          case INT_GT_INT         => binOp[Int, Int](_ > _)
+          case INT_EQEQ_INT       => binOp[Int, Int](_ == _)
+          case LONG_EQEQ_LONG     => binOp[Long, Long](_ == _)
+          case DOUBLE_PLUS_DOUBLE => binOp[Double, Double](_ + _)
+          case INT_PLUS_FLOAT     => binOp[Int, Float](_ + _)
+          case Any_equals         => binOp[Any, Any](_.equals(_))
+          case Any_hashCode       => unaryOp[Any](_.hashCode())
+          case Object_hashcode    => unaryOp[java.lang.Object](_.hashCode())
+          case ANYREF_EQ_ANYREF   => binOp[AnyRef, AnyRef](_ eq _)
+          case Object_init        => dummyOp
+          case Throwable_init     => dummyOp
+          case other              => UnsupportedEmulation(sym)
         }
       }){ override def isNullary: Boolean = sym.asMethod.paramLists.isEmpty }
     }
