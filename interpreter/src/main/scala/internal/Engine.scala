@@ -642,8 +642,10 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
       }
       else {
         val internal = u.asInstanceOf[scala.reflect.internal.Types]
+        // println(s"Sym $sym ${sym.typeSignature.member(member.name).alternatives}")
+        // sym.typeSignature.member(member.name).alternatives.foreach{x => println((x.typeSignature, member.typeSignature.asSeenFrom(sym).asInstanceOf[internal.Type]))}
 
-        sym.typeSignature.member(member.name).alternatives.find{alt =>
+        sym.typeSignature.member(member.name).alternatives.find{ alt =>
           alt.typeSignature.asInstanceOf[internal.Type].matches(member.typeSignature.asInstanceOf[internal.Type])
         }.get
       }
