@@ -35,6 +35,7 @@ trait Definitions {
   lazy val INT_EQEQ_INT = method1(Int, "==", Int)
   lazy val LONG_EQEQ_LONG = method1(Long, "==", Long)
   lazy val DOUBLE_PLUS_DOUBLE = method1(Double, "+", Double)
+  lazy val DOUBLE_TIMES_DOUBLE = method1(Double, "*", Double)
   lazy val ANYREF_EQ_ANYREF = typeOf[AnyRef].members.find(x => x.name.toString == "eq").get
 
   lazy val Throwable_init = method0(typeOf[Throwable], "<init>")
