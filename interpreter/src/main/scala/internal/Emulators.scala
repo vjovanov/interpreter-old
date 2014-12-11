@@ -42,6 +42,7 @@ trait Emulators {
           case INT_EQEQ_INT       => binOp[Int, Int](_ == _)
           case LONG_EQEQ_LONG     => binOp[Long, Long](_ == _)
           case DOUBLE_PLUS_DOUBLE => binOp[Double, Double](_ + _)
+          case DOUBLE_TIMES_DOUBLE => binOp[Double, Double](_ * _)
           case INT_PLUS_FLOAT     => binOp[Int, Float](_ + _)
           case Any_equals         => binOp[Any, Any](_.equals(_))
           case Any_hashCode       => unaryOp[Any](_.hashCode())
