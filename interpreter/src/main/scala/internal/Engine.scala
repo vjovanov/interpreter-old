@@ -37,6 +37,12 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
   }
 
   def eval(tree: Tree, env: Env): Result = tree match {
+    case q"java.lang.Math.cos($v)" =>
+      val arg = eval(v).asInstanceOf[Double]
+      Value.reflect(java.lang.Math.cos(arg), env)
+    case q"java.lang.Math.sin($v)" =>
+      val arg = eval(v).asInstanceOf[Double]
+      Value.reflect(java.lang.Math.sin(arg), env)
     case q"(..$params) => $body" if tree.attachments.contains[TreeValue] =>
       val callback = tree.attachments.get[TreeValue].get.value
       (CallbackFunctionValue(callback.asInstanceOf[List[Tree] => Tree]), env)
@@ -230,7 +236,6 @@ abstract class Engine extends InterpreterRequires with Definitions with Errors w
     val (vargs, env2) = eval(args, env1)
     try {
       // reflective calls
-
       vexpr.apply(vargs, env2)
     } catch { case e@ReturnException(ret) => if (vexpr.isInstanceOf[MethodValue]) ret else throw e }
   }

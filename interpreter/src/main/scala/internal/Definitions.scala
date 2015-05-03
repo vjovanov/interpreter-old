@@ -28,6 +28,7 @@ trait Definitions {
     candidate.getOrElse(throw new Exception(s"$x1.$name() not found"))
   }
   lazy val INT_PLUS_FLOAT = method1(Int, "+", Float)
+  lazy val INT_TIMES_DOUBLE = method1(Int, "*", Double)
   lazy val INT_PLUS_INT = method1(Int, "+", Int)
   lazy val INT_MINUS_INT = method1(Int, "-", Int)
   lazy val INT_LESS_INT = method1(Int, "<", Int)
@@ -36,6 +37,8 @@ trait Definitions {
   lazy val LONG_EQEQ_LONG = method1(Long, "==", Long)
   lazy val DOUBLE_PLUS_DOUBLE = method1(Double, "+", Double)
   lazy val DOUBLE_TIMES_DOUBLE = method1(Double, "*", Double)
+  lazy val DOUBLE_MINUS_DOUBLE = method1(Double, "-", Double)
+  lazy val DOUBLE_DIV_INT = method1(Double, "/", Int)
   lazy val ANYREF_EQ_ANYREF = typeOf[AnyRef].members.find(x => x.name.toString == "eq").get
 
   lazy val Throwable_init = method0(typeOf[Throwable], "<init>")

@@ -36,6 +36,7 @@ trait Emulators {
         def dummyOp = Value.reflect((), env)
         sym match {
           case INT_PLUS_INT       => binOp[Int, Int](_ + _)
+          case INT_TIMES_DOUBLE   => binOp[Int, Double](_ * _)
           case INT_MINUS_INT      => binOp[Int, Int](_ - _)
           case INT_LESS_INT       => binOp[Int, Int](_ < _)
           case INT_GT_INT         => binOp[Int, Int](_ > _)
@@ -43,6 +44,8 @@ trait Emulators {
           case LONG_EQEQ_LONG     => binOp[Long, Long](_ == _)
           case DOUBLE_PLUS_DOUBLE => binOp[Double, Double](_ + _)
           case DOUBLE_TIMES_DOUBLE => binOp[Double, Double](_ * _)
+          case DOUBLE_MINUS_DOUBLE => binOp[Double, Double](_ * _)
+          case DOUBLE_DIV_INT     => binOp[Double, Int](_ / _)
           case INT_PLUS_FLOAT     => binOp[Int, Float](_ + _)
           case Any_equals         => binOp[Any, Any](_.equals(_))
           case Any_hashCode       => unaryOp[Any](_.hashCode())
